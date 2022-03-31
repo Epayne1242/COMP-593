@@ -1,0 +1,45 @@
+import requests
+import sys
+
+
+def getpoke():
+    global poke_abilities
+    global poke_name
+    global req
+    pokemon = sys.argv[1]
+    try:
+        response = requests.get(f'https://pokeapi.co/api/v2/pokemon/{pokemon}')
+        response_dict = response.json()
+        poke_name = response_dict['name'] + '\n'
+        poke_abilities = ''
+        for i in response_dict['abilities']:
+            poke_abilities += i['ability']['name'] + '\n'
+        print('Pokemon data retrieval...Success')
+        return poke_name, poke_abilities
+
+
+    except:
+        print('Pokemon data retrieval...Failure')
+
+
+def to_the_bin():
+    try:
+
+        pasteBinApi = "f4R0OTFza_qTQ1NZJYLjoCeLqoHQux4X"
+        requestParams = {
+            'api_dev_key': pasteBinApi,
+            'api_option': 'paste',
+            'api_paste_name': poke_name,
+            'api_paste_code': poke_abilities
+
+        }
+        req = requests.post("https://pastebin.com/api/api_post.php", data=requestParams)
+        print('Posting to the bin...Sucess')
+        print(req.status_code, req.reason, req.text)
+
+    except:
+        print('Pastebin post...Failure')
+
+
+getpoke()
+to_the_bin()
