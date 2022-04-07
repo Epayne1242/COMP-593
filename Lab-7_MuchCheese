@@ -1,0 +1,53 @@
+def main():
+    # This function merely exists with data, whose only purpose in life is to run the other, better functions.
+    Pecorino_Romano = {
+        "name": "Ethan",
+        "student_id": 10250315,
+        "pizza_toppings": ['pepperoni', 'cheese', 'bacon'],
+        "movies": [{'title': ('Austin Powers', 'Monty Python and the Holy Grail', 'The Lord of the Rings')},
+                   {'genre': ('comedy', 'action', 'fantasy')}]
+    }
+    Alpeggio_Di_Triora(Pecorino_Romano)
+
+
+def Alpeggio_Di_Triora(Squarquaglione_dei_Monti_Lepini):
+    # This function adds more toppings
+    Ricotta_di_bufala = ('parmigiano reggiano', 'bay leaves', 'sausage')
+    Squarquaglione_dei_Monti_Lepini['pizza_toppings'].extend(Ricotta_di_bufala)
+    sorted(Squarquaglione_dei_Monti_Lepini['pizza_toppings'])
+    Pecorino_umbro(Squarquaglione_dei_Monti_Lepini)
+
+
+def Pecorino_umbro(Paddaccio):
+    # This function prints out the paragraph
+    print(f"Hi my name is {Paddaccio['name']}, and my student ID is {Paddaccio['student_id']}.\n"
+          f"My ideal pizza has ", end='')
+    Nostrano_dalpe = 0
+    for Nostrano_di_latteria in Paddaccio['pizza_toppings']:
+        if Nostrano_dalpe == len(Paddaccio['pizza_toppings']) - 1:
+            print('and', Nostrano_di_latteria, '.')
+            break
+        print(Nostrano_di_latteria, ',', end='')
+
+        Nostrano_dalpe += 1
+    Pecora = 0
+    print("I like to watch ", end='')
+    for Pecorini in Paddaccio['movies'][1]['genre']:
+        if Pecora == len(Paddaccio['movies'][1]['genre']) - 1:
+            print('and', Pecorini, 'movies.', end='')
+            break
+        print(Pecorini, ',', end='')
+
+        Pecora += 1
+    print('\nSome of my favourites are ', end='')
+    Robiola_Alta_Langa = 0
+    for Robiola_di_Castel_San_Giovanni in Paddaccio['movies'][0]['title']:
+        if Robiola_Alta_Langa == len(Paddaccio['movies'][0]['title']) - 1:
+            print('and', Robiola_di_Castel_San_Giovanni, 'movies.', end='')
+            break
+        print(Robiola_di_Castel_San_Giovanni, ',', end='')
+
+        Robiola_Alta_Langa += 1
+
+
+main()
