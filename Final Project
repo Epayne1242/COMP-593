@@ -5,7 +5,7 @@ import os
 def GetRequestForAPOD():
     directory = "APODFinal"
     parent = "C:/temp/"
-    path = os.path.join(parent,directory)
+    path = os.path.join(parent, directory)
     if not path:
         os.makedirs(path)
     os.chdir(path)
@@ -16,20 +16,22 @@ def GetRequestForAPOD():
         'https://api.nasa.gov/planetary/apod?api_key=36NoqcCMFh2leLTZk4El1h713RKd9CWamPneF2sP'
     )
     workableApodInfo = initialRequest.json()
-    print('Success!')
-    directory = os.getcwd()
-    print(directory)
+    if initialRequest.status_code == 200:
+        print('Success!')
+    else:
+        print("Unable to retrieve data.", initialRequest.status_code)
+        quit()
+
     hdOrNotHd = input("1 for hd, 2 for sd.")
-    if hdOrNotHd == '1' and not workableApodInfo['title'] + 'HD.png' in directory:
+    if hdOrNotHd == '1' and not workableApodInfo['title'] + 'HD.png' in file_path:
         hdImageRequest = requests.get(workableApodInfo['hdurl']).content
-        with open(workableApodInfo['title'] + 'HD.png','wb') as image:
+        with open(workableApodInfo['title'] + 'HD.png', 'wb') as image:
             image.write(hdImageRequest)
-    elif hdOrNotHd == '2' and not workableApodInfo['title'] + 'SD.png' in directory:
+    elif hdOrNotHd == '2' and not workableApodInfo['title'] + 'SD.png' in file_path:
         sdImageRequest = requests.get(workableApodInfo['url']).content
-        with open(workableApodInfo['title'] + 'SD.png','wb') as image:
+        with open(workableApodInfo['title'] + 'SD.png', 'wb') as image:
             image.write(sdImageRequest)
     else:
         print('That is already downloaded ')
 
-
-    print('done,',file_path)
+    print('done,', file_path)
