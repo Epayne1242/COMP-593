@@ -1,0 +1,126 @@
+
+import requests
+
+import sqlite3
+import hashlib
+import datetime as dt
+import os
+
+
+def GetRequestForAPOD():
+    myConnection = sqlite3.connect('nasaAPOD.db')
+    cursor = myConnection.cursor()
+    createAPODTable = """ CREATE TABLE IF NOT EXISTS apod (
+                                  title text NOT NULL,
+                                  url text NOT NULL,
+                                  url_hd text NOT NULL,
+                                  file_path text NOT NULL,
+                                  file_size integer NOT NULL,
+                                  sha_256_checksum text NOT NULL,
+                                  Download_Date text NOT NULL
+                                );"""
+    cursor.execute(createAPODTable)
+
+    addTheInfo = """INSERT INTO apod
+                        (
+                        title,
+                        url,
+                        url_hd,
+                        file_path,
+                        file_size,
+                        sha_256_checksum,
+                        Download_Date
+                        )
+                        VALUES (?,?,?,?,?,?,?);
+                    """
+    current_time = str(dt.date.today())
+
+
+
+    directory = "APODFinal"
+    parent = "C:/temp/"
+    path = os.path.join(parent, directory)
+    if not path:
+        os.makedirs(path)
+    os.chdir(path)
+    file_path = os.getcwd()
+
+    print(file_path)
+    print("Fetching Data.\n.\n.\n.")
+    initialRequest = requests.get(
+        'https://api.nasa.gov/planetary/apod?api_key=36NoqcCMFh2leLTZk4El1h713RKd9CWamPneF2sP'
+    )
+    workableApodInfo = initialRequest.json()
+    if initialRequest.status_code == 200:
+        print('Success!', workableApodInfo)
+
+
+
+    else:
+        print("Unable to retrieve data.", initialRequest.status_code)
+        quit()
+
+    hdOrNotHd = input("1 for hd, 2 for sd.")
+    if hdOrNotHd == '1' and not workableApodInfo['title'] + 'HD.png' in file_path:
+        hdFileStuff(workableApodInfo, file_path, addTheInfo)
+    elif hdOrNotHd == '2' and not workableApodInfo['title'] + 'SD.png' in file_path:
+        sdFileStuff(workableApodInfo, file_path, addTheInfo)
+    else:
+        print('That is already downloaded ')
+
+    print('done,', file_path)
+
+
+def hdFileStuff(db, file_path, info_template):
+    myConnection = sqlite3.connect('nasaAPOD.db')
+    cursor = myConnection.cursor()
+    hdImageRequest = requests.get(db['hdurl']).content
+    sha256 = hashlib.sha256(hdImageRequest)
+    print(sha256.hexdigest())
+    apodImageName = db['title'] + 'HD.png'
+    current_time = str(dt.date.today())
+    file_size = os.stat(apodImageName).st_size
+    with open(apodImageName, 'wb') as image:
+        image.write(hdImageRequest)
+    fillInfo = (
+        apodImageName,
+        'N/A',
+        db['hdurl'],
+        file_path,
+        file_size,
+        str(sha256.hexdigest()),
+        current_time
+    )
+    cursor.execute(info_template, fillInfo)
+    myConnection.commit()
+    myConnection.close()
+
+
+def sdFileStuff(db, file_path, info_template):
+    myConnection = sqlite3.connect('nasaAPOD.db')
+    cursor = myConnection.cursor()
+    sdImageRequest = requests.get(db['url']).content
+
+    apodImageName = db['title'] + 'SD.png'
+    current_time = dt.date.today()
+    file_size = os.stat(apodImageName).st_size
+    with open(apodImageName, 'wb') as image:
+        image.write(sdImageRequest)
+    sha256 = hashlib.sha256()
+    sha256.update(hdImageRequest)
+    print(sha256.digest())
+    fillInfo = (
+        db['title'],
+        db['url'],
+        'N/A',
+        file_path,
+        file_size,
+        sha256,
+        current_time
+    )
+    cursor.execute(info_template, fillInfo)
+    myConnection.commit()
+    myConnection.close()
+
+
+GetRequestForAPOD()
