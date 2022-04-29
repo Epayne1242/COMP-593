@@ -1,0 +1,34 @@
+This project took three days for me to complete. This is a detailed work log of my experiences.
+
+Day one.
+Wednesday, April 27th.
+Started early in the morning at around 10. Completely wasted this day because, in an incredibly brilliant move, I didn't read the finals rules, thus making a program that really didn't follow any of them. I did not really encounter any challenges on this day as I did not get far and had to restart on the third day.
+
+Day 2.
+Thursday, April 28th.
+This was the day that I spent learning and messing around with the code to see what works and what doesn't. I spent most of this day making a horrible to-read program that was mainly to figure out the inner workings of the way that I wanted them to be.
+Which ended up being this thing that doesn't work but I'm sure you can see the beginnings of my current code in this mess.https://github.com/Epayne1242/COMP-593/blob/main/failedFinal
+I mainly worked on the SQL part of it this day, as my SQL is complete garbage. This day was a key factor in getting to where I am today as this is how I learn and this helped me figure out what I wanted to do and how I wanted to do it.
+
+Day 3.
+Friday, April 29th.
+This was the day that I restarted pretty much. I kept some snippets of code from the older one but pretty much rewrote everything and put them into their own functions. 
+I really struggled with the SQL query because I'm really bad at it. It took me a while and looking at the discussion posts as well as their website and others to figure it out enough that it works. Still not confident at all in my SQL abilities. I also had a ton of trouble because of not thinking again. I have an application called wallpaper engine, which sets your background. That is normally fine but it doesn't allow you to change it without removing the wallpaper engine background first, leading me to believe my program wasn't working for like 20 minutes as it wasn't changing the background. Most of this project was very straightforward and smooth sailing after I figured out what I wanted and what I wanted it to look like. Oh, and I also struggled with the hashing for whatever reason. Not sure why I had so much trouble with this one, but it took me a little research on days one and two to figure out.
+One thing that I tried harder at this time was the names of variables. I find it requires less commenting if the variables and functions are named as brief descriptors. For example fill_db where all the function does is populate the database.
+
+I'm sorry I don't really have many details of when I was coding, I am writing this after I finished as when I code I usually just zone in and think, leading me to have not eaten yet and it is currently 2 pm. Total time spent was probably around 15 hours because of all my messing around and adding unnecessary things to make it harder for me.
+
+
+
+These were the websites I used during my project
+https://docs.python.org/3/library/ctypes.html
+https://dev.mysql.com/doc/connector-python/en/connector-python-api-mysqlcursor-fetchall.html
+https://www.youtube.com/watch?v=hk1ohonv4mk
+https://www.sqlitetutorial.net/sqlite-exists/
+https://www.youtube.com/watch?v=llF06RLZbBY&t=868s
+https://api.nasa.gov/
+
+
+
+
+
