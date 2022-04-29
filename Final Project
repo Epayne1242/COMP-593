@@ -7,14 +7,23 @@ import sys
 import ctypes
 
 
+# call with python filepath/main.py pathForFiles yyyy-mm-dd
+# This program uses Nasa's API to download their APOD and set as the current users background
+# if run with no parameters, it will use c:/temp and today's date as default values
+
 def main():
-    # This function 
+    # This function is responsible for figuring out if the user input cmp or not
+    # and to set the values of things accordingly
     dirName = "APODFinal"
+    # This if statement looks for the total cmp's (command line parameters) given, if any before making the
+    # required changes to the file path and date that will be used throughout the program.
     if len(sys.argv) == 3:
         parentDir = sys.argv[1]
         path = os.path.join(parentDir, dirName)
         print(path)
         doesExist = os.path.exists(path)
+        # This statement checks id the directory already exists before creating it if it does not as well as
+        # changing the cwd to it
         if not doesExist:
             os.makedirs(path)
         os.chdir(path)
@@ -22,20 +31,30 @@ def main():
         print("Directory created.", path)
         date = sys.argv[2]
 
-    else:
 
+    else:
+        # This is what happens when run with no cmp's, which is functionally identical to the one above just
+        # with a predetermined date gathered by the datetime module and predetermined filepath which is c:\temp
         parentDir = "C:/temp/"
         path = os.path.join(parentDir, dirName)
         doesExist = os.path.exists(path)
+
         if not doesExist:
             os.makedirs(path)
         os.chdir(path)
         print("Directory created.", path)
         date = str(dt.date.today())
-    dbCreation(path, date)
+    does_db_exist = os.path.exists(path + '/nasaAPOD.db')
+    if does_db_exist:
+        print("Database already present.")
+        pullData(path, date)
+    else:
+        dbCreation(path, date)
 
 
 def dbCreation(path, date):
+    # This function creates the database
+    # Not much interesting happening here just the creation of the database for use later
     print("Creating database at ", path, ".\n.\n.\n.", sep='')
     myConnection = sqlite3.connect('nasaAPOD.db')
     cursor = myConnection.cursor()
@@ -53,11 +72,15 @@ def dbCreation(path, date):
 
 
 def pullData(path, date):
+    # This function is for the api request itself
     print("Fetching data.\n.\n.\n.")
+    # Initial request to the api
     initialRequest = requests.get(
         'https://api.nasa.gov/planetary/apod?api_key=36NoqcCMFh2leLTZk4El1h713RKd9CWamPneF2sP&date=' + str(date)
     )
+    # workable api information
     workableApodInfo = initialRequest.json()
+    # Makes sure the response was proper before continuing the code
     if initialRequest.status_code == 200:
         print('Successfully retrieved data.\n')
     else:
@@ -67,9 +90,15 @@ def pullData(path, date):
 
 
 def sd_OR_hd(data, path, date):
+    # This function is extra and only here to change values based on wether or not
+    # you want the hd or sd picture
     sha256 = ''
     url = ''
     hd_Or_sd = int(input("1 for HD and 2 for SD"))
+    # This is the statement that I added to allow the user to select whether they want to download the hd or sd image
+    # The if and elif do the same exact thing functionally, just minor differences. Which are the to the name, which
+    # adds hd or sd to the end of the name for recognition in the folder as well as changing between the
+    # hd and normal url for the apod and the hash alongside that
     if hd_Or_sd == 1:
         print(f"Checking if apod for {date} is already downloaded.\n")
         contentPatch = requests.get(data['hdurl']).content
@@ -92,14 +121,18 @@ def sd_OR_hd(data, path, date):
 
 
 def sqlQuery(sha256, data, path, date, url):
+    # This is the query to check if the photos hash is already in the database or not
     myConnection = sqlite3.connect('nasaAPOD.db')
     cursor = myConnection.cursor()
     cursor.execute('SELECT sha_256_checksum FROM apod WHERE sha_256_checksum=?', (str(sha256.hexdigest()),))
     results = cursor.fetchall()
+    # If the query returns true, alert the user and asks if they would like to set the existing photo as background,
+    # if false continues the program on to the download phase
     if results:
         print("That image already exists on you computer at", path, end='.')
         setBack = input('Would you like to set it as you background? Y/N')
         file_size = ''
+        # If the user types y it prints the information of the image and sets it as the background
         if setBack.upper() == "Y":
             finalPrint(sha256, data, path, date, url, file_size)
             setBackground(path, data)
@@ -108,18 +141,22 @@ def sqlQuery(sha256, data, path, date, url):
             print("Bye then.")
             quit()
     else:
-        print("False, Downloading now to", path, end='.')
+        # This function is for downloading, the only reason this print statement is here and not above is because
+        # I didn't want to add unnecessary sleeps in the code and this makes the processing happen before its printed
+        print("Image not found, Downloading now to", path, end='.')
+        # The following stuff is for adding the suffix of the name so that it can be opened
+        # This then downloads the image
         apodImageName = data['title'] + '.jpg'
         hd_image_request = requests.get(data['url']).content
         with open(apodImageName, 'wb') as image:
             image.write(hd_image_request)
         file_size = os.stat(data['title'] + '.jpg').st_size
-        print(f"\n\nAPOD for {date} called '{data['title']}' saved to", path, ",", file_size, "bytes. Sha256 hash:",
-              sha256.hexdigest())
         fill_db(sha256, data, path, date, url, file_size)
 
 
 def fill_db(sha256, data, path, date, url, file_size):
+    # Populates the database with all the information required for the project
+    # less happening here then in dbCreation, this literally just populates the db
     myConnection = sqlite3.connect('nasaAPOD.db')
     cursor = myConnection.cursor()
 
@@ -152,13 +189,15 @@ def fill_db(sha256, data, path, date, url, file_size):
 
 
 def finalPrint(sha256, data, path, date, url, file_size):
-    print(f"Photo name:{data['title']} \n url:{url} \n Path to image:{path} \n File size in bytes:{file_size} \n"
+    # I had to use this twice and was lazy so I just made it a function so i could just call it
+    # This was originally just in fill_db
+    print(f"\nPhoto name:{data['title']} \n url:{url} \n Path to image:{path} \n File size in bytes:{file_size} \n"
           f" SHA256 {sha256.hexdigest()} \n Date:{date}")
 
 
 def setBackground(path, data):
-    path += "\\" + data['title'] + ".jpg"
-    print(path)
+    # Sets the background of the user based on the day or command line inputs.
+    path += "/" + data['title'] + ".jpg"
     ctypes.windll.user32.SystemParametersInfoW(20, 0, path, 3)
 
 
