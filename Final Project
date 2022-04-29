@@ -1,37 +1,165 @@
 import requests
+import sqlite3
+import hashlib
+import datetime as dt
 import os
+import sys
+import ctypes
 
 
-def GetRequestForAPOD():
-    directory = "APODFinal"
-    parent = "C:/temp/"
-    path = os.path.join(parent, directory)
-    if not path:
-        os.makedirs(path)
-    os.chdir(path)
-    file_path = os.getcwd()
-    print(file_path)
-    print("Fetching Data.\n.\n.\n.")
+def main():
+    # This function 
+    dirName = "APODFinal"
+    if len(sys.argv) == 3:
+        parentDir = sys.argv[1]
+        path = os.path.join(parentDir, dirName)
+        print(path)
+        doesExist = os.path.exists(path)
+        if not doesExist:
+            os.makedirs(path)
+        os.chdir(path)
+
+        print("Directory created.", path)
+        date = sys.argv[2]
+
+    else:
+
+        parentDir = "C:/temp/"
+        path = os.path.join(parentDir, dirName)
+        doesExist = os.path.exists(path)
+        if not doesExist:
+            os.makedirs(path)
+        os.chdir(path)
+        print("Directory created.", path)
+        date = str(dt.date.today())
+    dbCreation(path, date)
+
+
+def dbCreation(path, date):
+    print("Creating database at ", path, ".\n.\n.\n.", sep='')
+    myConnection = sqlite3.connect('nasaAPOD.db')
+    cursor = myConnection.cursor()
+    createAPODTable = """ CREATE TABLE IF NOT EXISTS apod (
+                                          title text NOT NULL,
+                                          url text NOT NULL,
+                                          file_path text NOT NULL,
+                                          file_size integer NOT NULL,
+                                          sha_256_checksum text NOT NULL,
+                                          Download_Date text NOT NULL
+                                        );"""
+    cursor.execute(createAPODTable)
+    print("Successfully created database at ", path, '.\n', sep='')
+    pullData(path, date)
+
+
+def pullData(path, date):
+    print("Fetching data.\n.\n.\n.")
     initialRequest = requests.get(
-        'https://api.nasa.gov/planetary/apod?api_key=36NoqcCMFh2leLTZk4El1h713RKd9CWamPneF2sP'
+        'https://api.nasa.gov/planetary/apod?api_key=36NoqcCMFh2leLTZk4El1h713RKd9CWamPneF2sP&date=' + str(date)
     )
     workableApodInfo = initialRequest.json()
     if initialRequest.status_code == 200:
-        print('Success!')
+        print('Successfully retrieved data.\n')
     else:
-        print("Unable to retrieve data.", initialRequest.status_code)
+        print("Unexpected failure", initialRequest.status_code)
+        quit()
+    sd_OR_hd(workableApodInfo, path, date)
+
+
+def sd_OR_hd(data, path, date):
+    sha256 = ''
+    url = ''
+    hd_Or_sd = int(input("1 for HD and 2 for SD"))
+    if hd_Or_sd == 1:
+        print(f"Checking if apod for {date} is already downloaded.\n")
+        contentPatch = requests.get(data['hdurl']).content
+        sha256 = hashlib.sha256(contentPatch)
+        url = data['hdurl']
+        data['title'] += "HD"
+
+    elif hd_Or_sd == 2:
+        print(f"Checking if apod for {date} is already downloaded.\n")
+        contentPatch = requests.get(data['url']).content
+        sha256 = hashlib.sha256(contentPatch)
+        url = data['url']
+        data['title'] += "SD"
+
+    else:
+        print("Please enter a 1 or 2 next time.")
         quit()
 
-    hdOrNotHd = input("1 for hd, 2 for sd.")
-    if hdOrNotHd == '1' and not workableApodInfo['title'] + 'HD.png' in file_path:
-        hdImageRequest = requests.get(workableApodInfo['hdurl']).content
-        with open(workableApodInfo['title'] + 'HD.png', 'wb') as image:
-            image.write(hdImageRequest)
-    elif hdOrNotHd == '2' and not workableApodInfo['title'] + 'SD.png' in file_path:
-        sdImageRequest = requests.get(workableApodInfo['url']).content
-        with open(workableApodInfo['title'] + 'SD.png', 'wb') as image:
-            image.write(sdImageRequest)
-    else:
-        print('That is already downloaded ')
+    sqlQuery(sha256, data, path, date, url)
 
-    print('done,', file_path)
+
+def sqlQuery(sha256, data, path, date, url):
+    myConnection = sqlite3.connect('nasaAPOD.db')
+    cursor = myConnection.cursor()
+    cursor.execute('SELECT sha_256_checksum FROM apod WHERE sha_256_checksum=?', (str(sha256.hexdigest()),))
+    results = cursor.fetchall()
+    if results:
+        print("That image already exists on you computer at", path, end='.')
+        setBack = input('Would you like to set it as you background? Y/N')
+        file_size = ''
+        if setBack.upper() == "Y":
+            finalPrint(sha256, data, path, date, url, file_size)
+            setBackground(path, data)
+
+        else:
+            print("Bye then.")
+            quit()
+    else:
+        print("False, Downloading now to", path, end='.')
+        apodImageName = data['title'] + '.jpg'
+        hd_image_request = requests.get(data['url']).content
+        with open(apodImageName, 'wb') as image:
+            image.write(hd_image_request)
+        file_size = os.stat(data['title'] + '.jpg').st_size
+        print(f"\n\nAPOD for {date} called '{data['title']}' saved to", path, ",", file_size, "bytes. Sha256 hash:",
+              sha256.hexdigest())
+        fill_db(sha256, data, path, date, url, file_size)
+
+
+def fill_db(sha256, data, path, date, url, file_size):
+    myConnection = sqlite3.connect('nasaAPOD.db')
+    cursor = myConnection.cursor()
+
+    addTheInfo = """INSERT INTO apod
+                                    (
+                                    title,
+                                    url,
+                                    file_path,
+                                    file_size,
+                                    sha_256_checksum,
+                                    Download_Date
+                                    )
+                                    VALUES (?,?,?,?,?,?);
+                                """
+
+    fillInfo = (
+        data['title'],
+        url,
+        path,
+        file_size,
+        str(sha256.hexdigest()),
+        date
+    )
+
+    cursor.execute(addTheInfo, fillInfo)
+    myConnection.commit()
+    myConnection.close()
+    finalPrint(sha256, data, path, date, url, file_size)
+    setBackground(path, data)
+
+
+def finalPrint(sha256, data, path, date, url, file_size):
+    print(f"Photo name:{data['title']} \n url:{url} \n Path to image:{path} \n File size in bytes:{file_size} \n"
+          f" SHA256 {sha256.hexdigest()} \n Date:{date}")
+
+
+def setBackground(path, data):
+    path += "\\" + data['title'] + ".jpg"
+    print(path)
+    ctypes.windll.user32.SystemParametersInfoW(20, 0, path, 3)
+
+
+main()
